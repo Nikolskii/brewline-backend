@@ -1,0 +1,15 @@
+# deps
+node_modules/
+
+# build
+dist/
+build/
+
+# секреты и локальный конфиг — НИКОГДА в публичный репо
+.env
+.env.local
+*.env
+
+# логи, мусор ОС
+*.log
+.DS_Store
