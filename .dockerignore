@@ -1,0 +1,14 @@
+# Не тащим в build-контекст лишнее (ускоряет сборку, уменьшает образ)
+node_modules
+dist
+.git
+.gitignore
+.env
+*.env
+*.log
+.DS_Store
+.idea
+.vscode
+Dockerfile
+.dockerignore
+README.md

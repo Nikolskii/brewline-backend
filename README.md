@@ -37,6 +37,44 @@
 | GET   | `/orders/stream`  | SSE-поток снапшотов (real-time)   |
 | —     | *(смена статуса)* | Перевод заказа по автомату статусов |
 
+## Запуск
+
+**Вариант A — через общий стек (рекомендуется).** Backend + MongoDB одной командой,
+с hot-reload. Инструкция — в [brewline-infra](https://github.com/Nikolskii/brewline-infra#запуск-локальной-среды):
+```bash
+# из папки brewline-infra
+docker compose up --build
+```
+
+**Вариант B — автономно на хосте.** Нужен Node 22+ и запущенная MongoDB.
+```bash
+npm install
+npm run dev      # tsx watch, hot-reload (по умолчанию порт 3000)
+```
+
+**Прод-сборка:**
+```bash
+npm run build    # TS → dist/
+npm start        # node dist/index.js
+```
+
+**Скрипты:**
+
+| Скрипт           | Что делает                        |
+|------------------|-----------------------------------|
+| `npm run dev`    | Dev-сервер с hot-reload (tsx)     |
+| `npm run build`  | Компиляция TypeScript в `dist/`   |
+| `npm start`      | Запуск собранного сервера         |
+| `npm run lint`   | ESLint                            |
+| `npm run format` | Prettier (форматирование)         |
+
+**Конфигурация** (переменные окружения):
+
+| Переменная  | По умолчанию | Назначение          |
+|-------------|--------------|---------------------|
+| `PORT`      | `3000`       | Порт HTTP-сервера   |
+| `MONGO_URL` | —            | Строка подключения к MongoDB |
+
 ## Экосистема репозиториев
 
 | Репо | Роль |
