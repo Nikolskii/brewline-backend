@@ -1,53 +1,38 @@
 /**
- * Доменная модель заказа и конечный автомат статусов (задача I3).
+ * Доменная логика заказа: автомат статусов и правила очереди (задача I3).
  *
- * Чистый домен: ноль зависимостей от Express и MongoDB. Это позволяет
- * тестировать логику переходов без запуска сервера и базы.
- *
- * Источник правды по домену — backend/«Описание компонента» и инструкция бариста.
- * Значения статусов — машинные коды (англ.); человекочитаемые надписи («Готовится»)
- * живут во фронте (слой представления).
+ * ТИПЫ контракта (Order, OrderStatus, ...) — из OpenAPI (единый источник истины,
+ * ADR 0008): генерируются в src/generated/openapi.ts скриптом `npm run gen:api`.
+ * Здесь — только доменная ЛОГИКА поверх этих типов. Чистый домен: без Express/Mongo.
  */
+import type { components } from '../generated/openapi.js';
 
-// --- Статусы -------------------------------------------------------------
+// --- Типы из контракта ---------------------------------------------------
+
+export type Order = components['schemas']['Order'];
+export type OrderStatus = components['schemas']['OrderStatus'];
+export type OrderSource = components['schemas']['OrderSource'];
+export type OrderItem = components['schemas']['OrderItem'];
+
+// --- Статусы (рантайм-значения) ------------------------------------------
 
 /**
- * Допустимые статусы заказа В СКОУПЕ инкремента 1.
- * `Ожидает оплаты` (веб-форма + оплата, ADR 0007) добавим в инкременте оплаты.
- *
- * Массив-константа — единый источник: из него выводится тип OrderStatus,
- * и он же ляжет в enum OpenAPI-спеки (I4).
+ * Список статусов для рантайма (итерация, сидинг, дефолты).
+ * openapi-typescript даёт только ТИПЫ, не рантайм-массив, поэтому значения держим
+ * здесь. `satisfies` гарантирует, что каждое значение — валидный OrderStatus из контракта.
  */
-export const ORDER_STATUSES = ['new', 'preparing', 'ready'] as const;
-export type OrderStatus = (typeof ORDER_STATUSES)[number];
-
-/** Источник заказа. */
-export const ORDER_SOURCES = ['cashier', 'web'] as const;
-export type OrderSource = (typeof ORDER_SOURCES)[number];
-
-// --- Модель заказа -------------------------------------------------------
-
-export interface OrderItem {
-  name: string;
-  quantity: number;
-}
-
-export interface Order {
-  orderId: string;
-  /** Отображаемый номер заказа (для клиента и экрана). */
-  number: number;
-  items: OrderItem[];
-  source: OrderSource;
-  status: OrderStatus;
-  /** Время поступления, ISO 8601. Определяет порядок в очереди. */
-  createdAt: string;
-}
+export const ORDER_STATUSES = [
+  'new',
+  'preparing',
+  'ready',
+] as const satisfies readonly OrderStatus[];
 
 // --- Автомат переходов ---------------------------------------------------
 
 /**
  * Разрешённые переходы: статус меняется только ВПЕРЁД, по одному шагу.
- * `ready` — терминальный (переходов нет).
+ * Тип Record<OrderStatus, ...> требует перечислить ВСЕ статусы — если в контракт
+ * добавят новый, здесь появится ошибка компиляции (защита от рассинхрона).
  */
 const TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
   new: ['preparing'],
@@ -63,12 +48,12 @@ export function canTransition(from: OrderStatus, to: OrderStatus): boolean {
 // --- Очередь -------------------------------------------------------------
 
 /** Статусы, входящие в активную очередь (её видят бариста и экран). */
-export const ACTIVE_STATUSES: readonly OrderStatus[] = ['new', 'preparing'];
+export const ACTIVE_STATUSES = ['new', 'preparing'] as const satisfies readonly OrderStatus[];
 
 /**
  * Входит ли заказ с таким статусом в активную очередь.
  * `ready` — закрыт и в очередь не входит.
  */
 export function isActiveStatus(status: OrderStatus): boolean {
-  return ACTIVE_STATUSES.includes(status);
+  return (ACTIVE_STATUSES as readonly OrderStatus[]).includes(status);
 }
