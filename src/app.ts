@@ -1,11 +1,13 @@
 import express, { type Express } from 'express';
+import { createOrderRoutes } from './http/orderRoutes.js';
+import type { OrderRepository } from './repository/orderRepository.js';
 
 /**
  * Создаёт и настраивает Express-приложение, но НЕ запускает его.
- * Разделение «создать» и «запустить» позволит в тестах поднимать app
- * без реального сетевого порта.
+ * Зависимости (репозиторий) передаются снаружи — приложение не создаёт их само.
+ * Благодаря этому в тестах можно поднять app с фейковым репозиторием, без Mongo.
  */
-export function createApp(): Express {
+export function createApp(repository: OrderRepository): Express {
   const app = express();
 
   app.use(express.json());
@@ -14,6 +16,8 @@ export function createApp(): Express {
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok' });
   });
+
+  app.use(createOrderRoutes(repository));
 
   return app;
 }
