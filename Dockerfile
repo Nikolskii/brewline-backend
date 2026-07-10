@@ -13,8 +13,11 @@ WORKDIR /app
 #  npm ci — детерминированная установка строго из lock-файла.
 # ============================================================
 FROM base AS deps
-COPY package.json package-lock.json ./
-RUN npm ci
+# .npmrc нужен внутри образа: в нём legacy-peer-deps, иначе npm ci падает на ERESOLVE
+COPY package.json package-lock.json .npmrc ./
+# BuildKit cache mount: npm-кеш переживает попытки сборки. При обрыве сети повтор
+# дотягивает только недостающие тарболы, а не качает всё заново.
+RUN --mount=type=cache,target=/root/.npm npm ci
 
 # ============================================================
 #  build — компиляция TypeScript → JavaScript (нужны devDeps)
@@ -42,7 +45,7 @@ CMD ["npm", "run", "dev"]
 # ============================================================
 FROM base AS prod
 ENV NODE_ENV=production
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json .npmrc ./
 COPY --from=deps /app/node_modules ./node_modules
 RUN npm prune --omit=dev
 COPY --from=build /app/dist ./dist
