@@ -1,4 +1,4 @@
-import type { Db, ObjectId, Collection } from 'mongodb';
+import { ObjectId, type Db, type Collection } from 'mongodb';
 import {
   ACTIVE_STATUSES,
   type Order,
@@ -35,9 +35,18 @@ function toDomain(doc: OrderDocument): Order {
   };
 }
 
+/** Строка → ObjectId. Невалидный hex (кривой id в URL) → null, трактуем как «не найдено». */
+function toObjectId(id: string): ObjectId | null {
+  return ObjectId.isValid(id) ? ObjectId.createFromHexString(id) : null;
+}
+
 export interface OrderRepository {
   /** Активная очередь: статусы new + preparing, по возрастанию createdAt. */
   findActiveQueue(): Promise<Order[]>;
+  /** Заказ по id, либо null (нет такого / кривой id). */
+  findById(orderId: string): Promise<Order | null>;
+  /** Записать новый статус и вернуть обновлённый заказ, либо null (нет такого). */
+  updateStatus(orderId: string, status: OrderStatus): Promise<Order | null>;
 }
 
 /**
@@ -56,6 +65,25 @@ export function createOrderRepository(db: Db): OrderRepository {
         .toArray();
 
       return docs.map(toDomain);
+    },
+
+    async findById(orderId: string): Promise<Order | null> {
+      const _id = toObjectId(orderId);
+      if (!_id) return null;
+      const doc = await orders.findOne({ _id });
+      return doc ? toDomain(doc) : null;
+    },
+
+    async updateStatus(orderId: string, status: OrderStatus): Promise<Order | null> {
+      const _id = toObjectId(orderId);
+      if (!_id) return null;
+      // findOneAndUpdate атомарен и с returnDocument:'after' сразу отдаёт обновлённый документ.
+      const doc = await orders.findOneAndUpdate(
+        { _id },
+        { $set: { status } },
+        { returnDocument: 'after' },
+      );
+      return doc ? toDomain(doc) : null;
     },
   };
 }

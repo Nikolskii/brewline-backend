@@ -1,13 +1,13 @@
 import express, { type Express } from 'express';
 import { createOrderRoutes } from './http/orderRoutes.js';
-import type { OrderRepository } from './repository/orderRepository.js';
+import type { OrderService } from './service/orderService.js';
 
 /**
  * Создаёт и настраивает Express-приложение, но НЕ запускает его.
- * Зависимости (репозиторий) передаются снаружи — приложение не создаёт их само.
- * Благодаря этому в тестах можно поднять app с фейковым репозиторием, без Mongo.
+ * Зависимости (сервис) передаются снаружи — приложение не создаёт их само.
+ * Благодаря этому в тестах можно поднять app с фейковым сервисом, без Mongo.
  */
-export function createApp(repository: OrderRepository): Express {
+export function createApp(service: OrderService): Express {
   const app = express();
 
   app.use(express.json());
@@ -17,7 +17,7 @@ export function createApp(repository: OrderRepository): Express {
     res.json({ status: 'ok' });
   });
 
-  app.use(createOrderRoutes(repository));
+  app.use(createOrderRoutes(service));
 
   return app;
 }

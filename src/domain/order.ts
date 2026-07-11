@@ -45,6 +45,11 @@ export function canTransition(from: OrderStatus, to: OrderStatus): boolean {
   return TRANSITIONS[from].includes(to);
 }
 
+/** Type guard: пришедшее извне значение — валидный OrderStatus. */
+export function isOrderStatus(value: unknown): value is OrderStatus {
+  return typeof value === 'string' && (ORDER_STATUSES as readonly string[]).includes(value);
+}
+
 // --- Очередь -------------------------------------------------------------
 
 /** Статусы, входящие в активную очередь (её видят бариста и экран). */
