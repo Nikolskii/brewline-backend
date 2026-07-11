@@ -66,6 +66,7 @@ npm start        # node dist/index.js
 | Скрипт           | Что делает                        |
 |------------------|-----------------------------------|
 | `npm run dev`    | Dev-сервер с hot-reload (tsx)     |
+| `npm run seed`   | Засеять тестовые заказы в Mongo (стирающий) |
 | `npm run build`  | Компиляция TypeScript в `dist/`   |
 | `npm start`      | Запуск собранного сервера         |
 | `npm run lint`   | ESLint                            |
