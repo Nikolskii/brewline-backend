@@ -79,6 +79,45 @@ npm start        # node dist/index.js
 | `PORT`      | `3000`       | Порт HTTP-сервера   |
 | `MONGO_URL` | —            | Строка подключения к MongoDB |
 
+## Ручная проверка
+
+Стек поднят (backend `:3000` + Mongo), см. [Запуск](#запуск).
+
+**1. Живость и очередь** (браузер или curl):
+```bash
+curl http://localhost:3000/health     # {"status":"ok"}
+```
+Открыть в браузере `http://localhost:3000/orders` — 4 заказа (`ready` скрыт, он не в очереди).
+
+**2. Засеять тестовые данные:**
+```bash
+# из папки brewline-infra
+docker compose exec backend npm run seed
+```
+
+**3. Live-обновление через SSE — нужны два терминала.**
+
+Терминал A — подписка на поток (висит и печатает события):
+```bash
+curl -N http://localhost:3000/orders/stream
+```
+Сразу придёт `event: snapshot` с текущей очередью.
+
+Терминал B — сменить статус. Взять `orderId` со страницы `/orders`, затем:
+```bash
+curl -X PATCH http://localhost:3000/orders/<orderId>/status \
+  -H 'Content-Type: application/json' -d '{"status":"preparing"}'
+```
+→ В терминале A **тут же появится новый `snapshot`** с обновлённым статусом. Это и есть live-очередь.
+
+**4. Проверка отказов:**
+```bash
+# назад нельзя → 409
+curl -i -X PATCH http://localhost:3000/orders/<orderId>/status \
+  -H 'Content-Type: application/json' -d '{"status":"new"}'
+# кривой статус → 400 ; несуществующий id → 404
+```
+
 ## Экосистема репозиториев
 
 | Репо | Роль |
