@@ -36,7 +36,7 @@
 | GET   | `/health`         | Проверка живости сервиса ✅        |
 | GET   | `/orders`         | Снапшот активной очереди (`new` + `preparing`, по `createdAt`) ✅ |
 | PATCH | `/orders/{id}/status` | Перевод заказа по автомату статусов (`409` — недопустимый переход) ✅ |
-| GET   | `/orders/stream`  | SSE-поток снапшотов (real-time) 🚧 |
+| GET   | `/orders/stream`  | SSE-поток снапшотов (real-time, событие `snapshot`) ✅ |
 
 Контракт — [`openapi/openapi.yaml`](openapi/openapi.yaml) (единый источник истины, ADR 0008).
 

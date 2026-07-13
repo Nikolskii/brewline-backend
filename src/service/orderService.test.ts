@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { createOrderService } from './orderService.js';
 import type { OrderRepository } from '../repository/orderRepository.js';
+import type { QueueNotifier } from '../events/queueNotifier.js';
 import type { Order } from '../domain/order.js';
 
 const baseOrder: Order = {
@@ -22,28 +23,39 @@ function fakeRepo(stored: Order | null): OrderRepository {
   };
 }
 
+/** Notifier со шпионом на emitChange. */
+function spyNotifier(): QueueNotifier {
+  return { emitChange: vi.fn(), onChange: vi.fn() };
+}
+
 describe('OrderService.changeStatus', () => {
-  it('успешный переход new → preparing', async () => {
-    const service = createOrderService(fakeRepo(baseOrder));
+  it('успешный переход new → preparing + публикует изменение', async () => {
+    const notifier = spyNotifier();
+    const service = createOrderService(fakeRepo(baseOrder), notifier);
     const result = await service.changeStatus('abc', 'preparing');
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.order.status).toBe('preparing');
+    expect(notifier.emitChange).toHaveBeenCalledOnce();
   });
 
-  it('несуществующий заказ → not_found', async () => {
-    const service = createOrderService(fakeRepo(baseOrder));
+  it('несуществующий заказ → not_found, без публикации', async () => {
+    const notifier = spyNotifier();
+    const service = createOrderService(fakeRepo(baseOrder), notifier);
     const result = await service.changeStatus('missing', 'preparing');
     expect(result).toEqual({ ok: false, reason: 'not_found' });
+    expect(notifier.emitChange).not.toHaveBeenCalled();
   });
 
-  it('недопустимый переход new → ready → invalid_transition', async () => {
-    const service = createOrderService(fakeRepo(baseOrder));
+  it('недопустимый переход new → ready → invalid_transition, без публикации', async () => {
+    const notifier = spyNotifier();
+    const service = createOrderService(fakeRepo(baseOrder), notifier);
     const result = await service.changeStatus('abc', 'ready');
     expect(result).toEqual({ ok: false, reason: 'invalid_transition' });
+    expect(notifier.emitChange).not.toHaveBeenCalled();
   });
 
   it('переход из терминального ready запрещён', async () => {
-    const service = createOrderService(fakeRepo({ ...baseOrder, status: 'ready' }));
+    const service = createOrderService(fakeRepo({ ...baseOrder, status: 'ready' }), spyNotifier());
     const result = await service.changeStatus('abc', 'preparing');
     expect(result).toEqual({ ok: false, reason: 'invalid_transition' });
   });

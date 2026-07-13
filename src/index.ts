@@ -3,6 +3,7 @@ import { createApp } from './app.js';
 import { loadConfig } from './config.js';
 import { createOrderRepository } from './repository/orderRepository.js';
 import { createOrderService } from './service/orderService.js';
+import { createQueueNotifier } from './events/queueNotifier.js';
 
 const config = loadConfig();
 
@@ -13,10 +14,11 @@ await client.connect();
 
 // Имя базы берётся из строки подключения (.../brewline).
 const db = client.db();
+const notifier = createQueueNotifier();
 const repository = createOrderRepository(db);
-const service = createOrderService(repository);
+const service = createOrderService(repository, notifier);
 
-const app = createApp(service);
+const app = createApp(service, notifier);
 
 const server = app.listen(config.port, () => {
   console.log(`Brewline backend listening on http://localhost:${config.port}`);

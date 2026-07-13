@@ -1,5 +1,6 @@
 import { canTransition, type Order, type OrderStatus } from '../domain/order.js';
 import type { OrderRepository } from '../repository/orderRepository.js';
+import type { QueueNotifier } from '../events/queueNotifier.js';
 
 /**
  * Прикладной слой (use-cases). Оркестрирует домен и репозиторий; сам не знает
@@ -16,7 +17,10 @@ export interface OrderService {
   changeStatus(orderId: string, to: OrderStatus): Promise<ChangeStatusResult>;
 }
 
-export function createOrderService(repository: OrderRepository): OrderService {
+export function createOrderService(
+  repository: OrderRepository,
+  notifier: QueueNotifier,
+): OrderService {
   return {
     getQueue() {
       return repository.findActiveQueue();
@@ -33,6 +37,9 @@ export function createOrderService(repository: OrderRepository): OrderService {
 
       const updated = await repository.updateStatus(orderId, to);
       if (!updated) return { ok: false, reason: 'not_found' };
+
+      // Очередь изменилась — публикуем, чтобы SSE-хаб разослал снапшот.
+      notifier.emitChange();
 
       return { ok: true, order: updated };
     },
