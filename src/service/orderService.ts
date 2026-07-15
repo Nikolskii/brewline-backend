@@ -23,7 +23,7 @@ export function createOrderService(
 ): OrderService {
   return {
     getQueue() {
-      return repository.findActiveQueue();
+      return repository.findBoardSnapshot();
     },
 
     async changeStatus(orderId: string, to: OrderStatus): Promise<ChangeStatusResult> {

@@ -14,9 +14,11 @@ servers:
 paths:
   /orders:
     get:
-      summary: Снапшот активной очереди
+      summary: Снапшот табло очереди
       operationId: getOrders
-      description: Заказы в статусах new и preparing, упорядоченные по createdAt.
+      description: >
+        Заказы, видимые на табло в зале: статусы new, preparing и ready
+        (ready — «заберите на баре»), упорядоченные по createdAt.
       responses:
         '200':
           description: Текущая очередь

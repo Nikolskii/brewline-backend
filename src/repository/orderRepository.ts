@@ -1,6 +1,6 @@
 import { ObjectId, type Db, type Collection } from 'mongodb';
 import {
-  ACTIVE_STATUSES,
+  BOARD_STATUSES,
   type Order,
   type OrderItem,
   type OrderSource,
@@ -41,8 +41,8 @@ function toObjectId(id: string): ObjectId | null {
 }
 
 export interface OrderRepository {
-  /** Активная очередь: статусы new + preparing, по возрастанию createdAt. */
-  findActiveQueue(): Promise<Order[]>;
+  /** Снапшот табло: статусы new + preparing + ready, по возрастанию createdAt. */
+  findBoardSnapshot(): Promise<Order[]>;
   /** Заказ по id, либо null (нет такого / кривой id). */
   findById(orderId: string): Promise<Order | null>;
   /** Записать новый статус и вернуть обновлённый заказ, либо null (нет такого). */
@@ -57,10 +57,10 @@ export function createOrderRepository(db: Db): OrderRepository {
   const orders: Collection<OrderDocument> = db.collection<OrderDocument>('orders');
 
   return {
-    async findActiveQueue(): Promise<Order[]> {
+    async findBoardSnapshot(): Promise<Order[]> {
       const docs = await orders
-        // Правило «что входит в очередь» живёт в домене — здесь только применяем.
-        .find({ status: { $in: [...ACTIVE_STATUSES] } })
+        // Правило «что показывает табло» живёт в домене — здесь только применяем.
+        .find({ status: { $in: [...BOARD_STATUSES] } })
         .sort({ createdAt: 1 })
         .toArray();
 

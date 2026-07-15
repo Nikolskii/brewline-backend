@@ -12,8 +12,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Снапшот активной очереди
-         * @description Заказы в статусах new и preparing, упорядоченные по createdAt.
+         * Снапшот табло очереди
+         * @description Заказы, видимые на табло в зале: статусы new, preparing и ready (ready — «заберите на баре»), упорядоченные по createdAt.
          */
         get: operations["getOrders"];
         put?: never;

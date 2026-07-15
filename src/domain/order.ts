@@ -52,13 +52,22 @@ export function isOrderStatus(value: unknown): value is OrderStatus {
 
 // --- Очередь -------------------------------------------------------------
 
-/** Статусы, входящие в активную очередь (её видят бариста и экран). */
+/**
+ * Активная РАБОТА бариста: заказы, которые он ведёт (new + preparing).
+ * `ready` сюда не входит — с точки зрения бариста заказ завершён.
+ * (Пока используется как доменное понятие для будущего UI бариста.)
+ */
 export const ACTIVE_STATUSES = ['new', 'preparing'] as const satisfies readonly OrderStatus[];
 
-/**
- * Входит ли заказ с таким статусом в активную очередь.
- * `ready` — закрыт и в очередь не входит.
- */
 export function isActiveStatus(status: OrderStatus): boolean {
   return (ACTIVE_STATUSES as readonly OrderStatus[]).includes(status);
 }
+
+/**
+ * Статусы, видимые на ТАБЛО в зале (экран очереди): new + preparing + ready.
+ * Табло, в отличие от активной работы бариста, показывает и `ready` —
+ * чтобы клиент увидел «Готов · заберите на баре».
+ * NB (упрощение walking skeleton): `ready` пока копится и не убирается автоматически.
+ * Будущее — авто-снятие через N минут или действие «выдан».
+ */
+export const BOARD_STATUSES = ['new', 'preparing', 'ready'] as const satisfies readonly OrderStatus[];

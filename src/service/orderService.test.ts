@@ -16,7 +16,7 @@ const baseOrder: Order = {
 /** Фейковый репозиторий — тестируем сервис без Mongo. */
 function fakeRepo(stored: Order | null): OrderRepository {
   return {
-    findActiveQueue: async () => (stored ? [stored] : []),
+    findBoardSnapshot: async () => (stored ? [stored] : []),
     findById: async (id) => (stored && stored.orderId === id ? stored : null),
     updateStatus: async (id, status) =>
       stored && stored.orderId === id ? { ...stored, status } : null,
