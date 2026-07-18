@@ -1,0 +1,42 @@
+# Локальная среда разработки Brewline: MongoDB + backend (dev-режим, hot-reload).
+# Живёт в самом backend-репо — репозиторий владеет своим dev-окружением,
+# без связи с путями соседних репозиториев.
+#
+# Запуск из папки brewline-backend:  docker compose up
+#
+# Прод/кластерная инфраструктура (в т.ч. общий MongoDB кластера) — в brewline-infra (срез 2).
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    ports:
+      - '27017:27017' # проброс наружу — чтобы подключаться с хоста (Compass/mongosh)
+    volumes:
+      - mongo-data:/data/db # данные переживают перезапуск контейнера
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: . # свой Dockerfile, никаких ../
+      target: dev # dev-стадия Dockerfile (tsx watch)
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      PORT: 3000
+      # Хост базы = имя сервиса 'mongo' (compose-сеть), а не localhost.
+      MONGO_URL: mongodb://mongo:27017/brewline
+    volumes:
+      - .:/app # код с хоста → hot-reload
+      - /app/node_modules # node_modules из образа (linux), НЕ с хоста (darwin)
+    depends_on:
+      mongo:
+        condition: service_healthy # ждём готовности базы
+
+volumes:
+  mongo-data:

@@ -42,12 +42,13 @@
 
 ## Запуск
 
-**Вариант A — через общий стек (рекомендуется).** Backend + MongoDB одной командой,
-с hot-reload. Инструкция — в [brewline-infra](https://github.com/Nikolskii/brewline-infra#запуск-локальной-среды):
+**Вариант A — через docker-compose (рекомендуется).** Backend + MongoDB одной командой,
+с hot-reload. `docker-compose.yml` живёт в этом же репо:
 ```bash
-# из папки brewline-infra
-docker compose up --build
+docker compose up --build     # первый раз — со сборкой; далее просто docker compose up
 ```
+> Меняли зависимости (`package.json`)? Пересоберите с пересозданием анонимных томов:
+> `docker compose up -d --build -V` (том `node_modules` иначе перекроет свежий образ).
 
 **Вариант B — автономно на хосте.** Нужен Node 22+ и запущенная MongoDB.
 ```bash
@@ -91,7 +92,6 @@ curl http://localhost:3000/health     # {"status":"ok"}
 
 **2. Засеять тестовые данные:**
 ```bash
-# из папки brewline-infra
 docker compose exec backend npm run seed
 ```
 
