@@ -67,7 +67,14 @@ await client.connect();
 
 const orders = client.db().collection('orders');
 await orders.deleteMany({});
-await orders.insertMany(SEED_ORDERS);
+// updatedAt = когда стал текущим статусом. Для ready берём свежее время, чтобы
+// он попал в TTL-окно табло и был виден; у остальных = createdAt.
+await orders.insertMany(
+  SEED_ORDERS.map((o) => ({
+    ...o,
+    updatedAt: o.status === 'ready' ? minutesAgo(2) : o.createdAt,
+  })),
+);
 
 console.log(
   `Засеяно заказов: ${SEED_ORDERS.length} (в активной очереди — 4, ready — 1 вне очереди)`,

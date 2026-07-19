@@ -15,8 +15,8 @@ await client.connect();
 // Имя базы берётся из строки подключения (.../brewline).
 const db = client.db();
 const notifier = createQueueNotifier();
-const repository = createOrderRepository(db);
-const service = createOrderService(repository, notifier);
+const repository = createOrderRepository(db, config.readyTtlMs);
+const service = createOrderService(repository, notifier, config.readyTtlMs);
 
 const app = createApp(service, notifier);
 

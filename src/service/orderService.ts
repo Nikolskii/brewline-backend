@@ -20,6 +20,7 @@ export interface OrderService {
 export function createOrderService(
   repository: OrderRepository,
   notifier: QueueNotifier,
+  readyTtlMs: number,
 ): OrderService {
   return {
     getQueue() {
@@ -40,6 +41,12 @@ export function createOrderService(
 
       // Очередь изменилась — публикуем, чтобы SSE-хаб разослал снапшот.
       notifier.emitChange();
+
+      // Заказ стал ready → через TTL он должен уйти с табло. Планируем повторную
+      // рассылку: по таймеру снапшот пересчитается уже без просроченного ready.
+      if (to === 'ready') {
+        setTimeout(() => notifier.emitChange(), readyTtlMs).unref();
+      }
 
       return { ok: true, order: updated };
     },

@@ -4,6 +4,8 @@ import type { OrderRepository } from '../repository/orderRepository.js';
 import type { QueueNotifier } from '../events/queueNotifier.js';
 import type { Order } from '../domain/order.js';
 
+const TTL = 5 * 60_000;
+
 const baseOrder: Order = {
   orderId: 'abc',
   number: 1,
@@ -31,7 +33,7 @@ function spyNotifier(): QueueNotifier {
 describe('OrderService.changeStatus', () => {
   it('успешный переход new → preparing + публикует изменение', async () => {
     const notifier = spyNotifier();
-    const service = createOrderService(fakeRepo(baseOrder), notifier);
+    const service = createOrderService(fakeRepo(baseOrder), notifier, TTL);
     const result = await service.changeStatus('abc', 'preparing');
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.order.status).toBe('preparing');
@@ -40,7 +42,7 @@ describe('OrderService.changeStatus', () => {
 
   it('несуществующий заказ → not_found, без публикации', async () => {
     const notifier = spyNotifier();
-    const service = createOrderService(fakeRepo(baseOrder), notifier);
+    const service = createOrderService(fakeRepo(baseOrder), notifier, TTL);
     const result = await service.changeStatus('missing', 'preparing');
     expect(result).toEqual({ ok: false, reason: 'not_found' });
     expect(notifier.emitChange).not.toHaveBeenCalled();
@@ -48,15 +50,38 @@ describe('OrderService.changeStatus', () => {
 
   it('недопустимый переход new → ready → invalid_transition, без публикации', async () => {
     const notifier = spyNotifier();
-    const service = createOrderService(fakeRepo(baseOrder), notifier);
+    const service = createOrderService(fakeRepo(baseOrder), notifier, TTL);
     const result = await service.changeStatus('abc', 'ready');
     expect(result).toEqual({ ok: false, reason: 'invalid_transition' });
     expect(notifier.emitChange).not.toHaveBeenCalled();
   });
 
   it('переход из терминального ready запрещён', async () => {
-    const service = createOrderService(fakeRepo({ ...baseOrder, status: 'ready' }), spyNotifier());
+    const service = createOrderService(
+      fakeRepo({ ...baseOrder, status: 'ready' }),
+      spyNotifier(),
+      TTL,
+    );
     const result = await service.changeStatus('abc', 'preparing');
     expect(result).toEqual({ ok: false, reason: 'invalid_transition' });
+  });
+
+  it('переход preparing → ready планирует авто-снятие через TTL', async () => {
+    vi.useFakeTimers();
+    const notifier = spyNotifier();
+    const service = createOrderService(
+      fakeRepo({ ...baseOrder, status: 'preparing' }),
+      notifier,
+      TTL,
+    );
+
+    const result = await service.changeStatus('abc', 'ready');
+    expect(result.ok).toBe(true);
+    expect(notifier.emitChange).toHaveBeenCalledTimes(1); // сразу после смены
+
+    vi.advanceTimersByTime(TTL);
+    expect(notifier.emitChange).toHaveBeenCalledTimes(2); // + авто-снятие по таймеру
+
+    vi.useRealTimers();
   });
 });
