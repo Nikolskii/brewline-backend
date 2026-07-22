@@ -23,3 +23,6 @@ packages/api-types/openapi.yaml
 # IDE
 .idea/
 .vscode/
+
+# локальные переопределения compose (особенности конкретной машины)
+docker-compose.override.yml
