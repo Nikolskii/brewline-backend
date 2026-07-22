@@ -48,4 +48,8 @@ jobs:
         run: npm publish --provenance --access public
         working-directory: packages/api-types
         env:
+          # NPM_TOKEN должен уметь обходить 2FA, иначе npm вернёт 403 с требованием
+          # одноразового кода — вводить его в CI некому. Подходит классический токен
+          # типа Automation либо granular-токен с явно включённым обходом 2FA.
+          # Обычного granular-токена «read and write» НЕ достаточно.
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
