@@ -1,0 +1,27 @@
+{
+  "name": "@brewline/api-types",
+  "version": "0.1.0",
+  "description": "TypeScript-типы контракта Brewline, сгенерированные из OpenAPI-спеки backend",
+  "license": "MIT",
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./openapi.yaml": "./openapi.yaml"
+  },
+  "files": ["dist", "openapi.yaml", "README.md"],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nikolskii/brewline-backend.git",
+    "directory": "packages/api-types"
+  },
+  "homepage": "https://github.com/Nikolskii/brewline-backend/tree/main/packages/api-types#readme",
+  "keywords": ["brewline", "openapi", "types", "contract"],
+  "sideEffects": false
+}

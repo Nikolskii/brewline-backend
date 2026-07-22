@@ -1,0 +1,46 @@
+# Проверки на каждый push и pull request.
+#
+# Ключевой шаг — check:spec. Контракт теперь генерируется из zod-схем (ADR 0010),
+# а openapi.yaml коммитится в репозиторий. Значит появляется риск: поменял схему,
+# забыл перегенерировать — и в git лежит устаревшая спека, из которой соберётся
+# неверный пакет типов. Шаг заново генерирует спеку и падает, если результат
+# отличается от закоммиченного. Дисциплина заменена проверкой.
+
+name: ci
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Установка зависимостей
+        run: npm ci
+
+      - name: Линт
+        run: npm run lint
+
+      - name: Тесты
+        run: npm test
+
+      - name: Типы вспомогательных скриптов
+        # scripts/ не входит в сборку приложения, поэтому проверяется отдельным
+        # конфигом — иначе ошибка в генераторе спеки всплыла бы только при запуске.
+        run: npm run typecheck:scripts
+
+      - name: Спека соответствует zod-схемам
+        run: npm run check:spec
+
+      - name: Пакет типов собирается
+        run: npm run build:types

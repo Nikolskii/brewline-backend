@@ -1,31 +1,20 @@
 /**
  * Доменная логика заказа: автомат статусов и правила очереди (задача I3).
  *
- * ТИПЫ контракта (Order, OrderStatus, ...) — из OpenAPI (единый источник истины,
- * ADR 0008): генерируются в src/generated/openapi.ts скриптом `npm run gen:api`.
- * Здесь — только доменная ЛОГИКА поверх этих типов. Чистый домен: без Express/Mongo.
+ * ТИПЫ и рантайм-значения контракта — из zod-схем (src/contract/schemas.ts,
+ * ADR 0010). Здесь — только доменная ЛОГИКА поверх них: что такое «переход
+ * вперёд» и «активный заказ». Чистый домен: без Express/Mongo.
  */
-import type { components } from '../generated/openapi.js';
+import type { OrderStatus } from '../contract/schemas.js';
 
-// --- Типы из контракта ---------------------------------------------------
-
-export type Order = components['schemas']['Order'];
-export type OrderStatus = components['schemas']['OrderStatus'];
-export type OrderSource = components['schemas']['OrderSource'];
-export type OrderItem = components['schemas']['OrderItem'];
-
-// --- Статусы (рантайм-значения) ------------------------------------------
-
-/**
- * Список статусов для рантайма (итерация, сидинг, дефолты).
- * openapi-typescript даёт только ТИПЫ, не рантайм-массив, поэтому значения держим
- * здесь. `satisfies` гарантирует, что каждое значение — валидный OrderStatus из контракта.
- */
-export const ORDER_STATUSES = [
-  'new',
-  'preparing',
-  'ready',
-] as const satisfies readonly OrderStatus[];
+// Реэкспорт типов контракта: остальной код (сервис, репозиторий, роуты) работает
+// с доменом и не обязан знать, что типы физически заданы схемами в contract/.
+export type {
+  Order,
+  OrderItem,
+  OrderSource,
+  OrderStatus,
+} from '../contract/schemas.js';
 
 // --- Автомат переходов ---------------------------------------------------
 
@@ -45,10 +34,6 @@ export function canTransition(from: OrderStatus, to: OrderStatus): boolean {
   return TRANSITIONS[from].includes(to);
 }
 
-/** Type guard: пришедшее извне значение — валидный OrderStatus. */
-export function isOrderStatus(value: unknown): value is OrderStatus {
-  return typeof value === 'string' && (ORDER_STATUSES as readonly string[]).includes(value);
-}
 
 // --- Очередь -------------------------------------------------------------
 

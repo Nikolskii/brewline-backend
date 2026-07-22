@@ -1,133 +1,144 @@
 openapi: 3.1.0
-
 info:
   title: Brewline API
   version: 0.1.0
-  description: >
-    REST + real-time контракт Brewline — единый источник истины (ADR 0008).
-    Фронты и backend генерируют TypeScript-типы из этой спеки; руками типы не пишем.
+  description: >-
+    REST + real-time контракт Brewline.
 
+    ФАЙЛ СГЕНЕРИРОВАН из zod-схем (src/contract/schemas.ts, ADR 0010) — править руками бессмысленно,
+    правки затрёт `npm run gen:spec`.
+
+    Типы для фронтов собираются отсюда в пакет @brewline/api-types (ADR 0009).
 servers:
   - url: http://localhost:3000
     description: Локальная разработка
-
-paths:
-  /orders:
-    get:
-      summary: Снапшот табло очереди
-      operationId: getOrders
-      description: >
-        Заказы, видимые на табло в зале: статусы new, preparing и ready
-        (ready — «заберите на баре»), упорядоченные по createdAt.
-      responses:
-        '200':
-          description: Текущая очередь
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Order'
-
-  /orders/{orderId}/status:
-    patch:
-      summary: Сменить статус заказа
-      operationId: updateOrderStatus
-      description: Перевод статуса вперёд по автомату. Недопустимый переход отклоняется (409).
-      parameters:
-        - name: orderId
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateOrderStatusRequest'
-      responses:
-        '200':
-          description: Обновлённый заказ
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Order'
-        '404':
-          description: Заказ не найден
-        '409':
-          description: Недопустимый переход статуса
-
-  /orders/stream:
-    get:
-      summary: SSE-поток снапшотов очереди
-      operationId: streamOrders
-      description: >
-        Server-Sent Events (text/event-stream). При каждом изменении сервер шлёт
-        полный снапшот очереди — JSON-массив Order (ADR 0001). Отдельного языка
-        событий нет: payload переиспользует схему Order.
-        NB: OpenAPI плохо описывает стримы — тело помечено как строка, реальный
-        формат события задан в этом описании.
-      responses:
-        '200':
-          description: Поток событий
-          content:
-            text/event-stream:
-              schema:
-                type: string
-
 components:
   schemas:
-    OrderStatus:
-      type: string
-      description: Статус заказа. Меняется только вперёд (new → preparing → ready).
-      enum:
-        - new
-        - preparing
-        - ready
-
-    OrderSource:
-      type: string
-      description: Источник заказа.
-      enum:
-        - cashier
-        - web
-
-    OrderItem:
-      type: object
-      required: [name, quantity]
-      properties:
-        name:
-          type: string
-        quantity:
-          type: integer
-          minimum: 1
-
     Order:
       type: object
-      required: [orderId, number, items, source, status, createdAt]
       properties:
         orderId:
           type: string
+          description: Идентификатор заказа.
         number:
           type: integer
           description: Отображаемый номер заказа.
         items:
           type: array
           items:
-            $ref: '#/components/schemas/OrderItem'
+            $ref: "#/components/schemas/OrderItem"
+          description: Состав заказа.
         source:
-          $ref: '#/components/schemas/OrderSource'
+          $ref: "#/components/schemas/OrderSource"
         status:
-          $ref: '#/components/schemas/OrderStatus'
+          $ref: "#/components/schemas/OrderStatus"
         createdAt:
           type: string
           format: date-time
           description: Время поступления (ISO 8601). Определяет порядок в очереди.
-
+      required:
+        - orderId
+        - number
+        - items
+        - source
+        - status
+        - createdAt
+      description: Заказ в очереди.
+    OrderItem:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: Название напитка.
+        quantity:
+          type: integer
+          minimum: 1
+          description: Количество порций.
+      required:
+        - name
+        - quantity
+      description: Позиция заказа.
+    OrderSource:
+      type: string
+      enum:
+        - cashier
+        - web
+      description: Источник заказа.
+    OrderStatus:
+      type: string
+      enum:
+        - new
+        - preparing
+        - ready
+      description: Статус заказа. Меняется только вперёд (new → preparing → ready).
     UpdateOrderStatusRequest:
       type: object
-      required: [status]
       properties:
         status:
-          $ref: '#/components/schemas/OrderStatus'
+          $ref: "#/components/schemas/OrderStatus"
+      required:
+        - status
+paths:
+  /orders:
+    get:
+      operationId: getOrders
+      summary: Снапшот табло очереди
+      description: "Заказы, видимые на табло в зале: статусы new, preparing и ready (ready — «заберите на
+        баре»), упорядоченные по createdAt."
+      responses:
+        "200":
+          description: Текущая очередь
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+  /orders/{orderId}/status:
+    patch:
+      operationId: updateOrderStatus
+      summary: Сменить статус заказа
+      description: Перевод статуса вперёд по автомату. Недопустимый переход отклоняется (409).
+      parameters:
+        - schema:
+            type: string
+            description: Идентификатор заказа.
+          required: true
+          description: Идентификатор заказа.
+          name: orderId
+          in: path
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOrderStatusRequest"
+      responses:
+        "200":
+          description: Обновлённый заказ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          description: Тело запроса не соответствует контракту
+        "404":
+          description: Заказ не найден
+        "409":
+          description: Недопустимый переход статуса
+  /orders/stream:
+    get:
+      operationId: streamOrders
+      summary: SSE-поток снапшотов очереди
+      description: "Server-Sent Events (text/event-stream). При каждом изменении сервер шлёт полный
+        снапшот очереди — JSON-массив Order (ADR 0001). Отдельного языка событий нет: payload
+        переиспользует схему Order. NB: OpenAPI плохо описывает стримы — тело помечено как строка,
+        реальный формат события задан в этом описании."
+      responses:
+        "200":
+          description: Поток событий
+          content:
+            text/event-stream:
+              schema:
+                type: string

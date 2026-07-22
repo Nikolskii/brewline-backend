@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { isOrderStatus } from '../domain/order.js';
+import { UpdateOrderStatusRequestSchema } from '../contract/schemas.js';
 import type { OrderService } from '../service/orderService.js';
 
 /**
@@ -17,15 +17,23 @@ export function createOrderRoutes(service: OrderService): Router {
 
   // PATCH /orders/:orderId/status — смена статуса (openapi: updateOrderStatus)
   router.patch('/orders/:orderId/status', async (req, res) => {
-    const status: unknown = (req.body as { status?: unknown } | undefined)?.status;
+    // Валидация тела схемой контракта (ADR 0010): та же схема, из которой
+    // сгенерирована спека, — расходиться с контрактом ей физически негде.
+    // safeParse не бросает исключение, а возвращает результат-объединение.
+    const parsed = UpdateOrderStatusRequestSchema.safeParse(req.body);
 
-    // Валидация тела вручную: status должен быть валидным OrderStatus.
-    if (!isOrderStatus(status)) {
-      res.status(400).json({ error: 'status должен быть одним из: new, preparing, ready' });
+    if (!parsed.success) {
+      res.status(400).json({
+        error: 'Тело запроса не соответствует контракту',
+        details: parsed.error.issues,
+      });
       return;
     }
 
-    const result = await service.changeStatus(req.params.orderId, status);
+    const result = await service.changeStatus(
+      req.params.orderId,
+      parsed.data.status,
+    );
 
     if (result.ok) {
       res.json(result.order);

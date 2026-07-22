@@ -68,24 +68,13 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /**
-         * @description Статус заказа. Меняется только вперёд (new → preparing → ready).
-         * @enum {string}
-         */
-        OrderStatus: "new" | "preparing" | "ready";
-        /**
-         * @description Источник заказа.
-         * @enum {string}
-         */
-        OrderSource: "cashier" | "web";
-        OrderItem: {
-            name: string;
-            quantity: number;
-        };
+        /** @description Заказ в очереди. */
         Order: {
+            /** @description Идентификатор заказа. */
             orderId: string;
             /** @description Отображаемый номер заказа. */
             number: number;
+            /** @description Состав заказа. */
             items: components["schemas"]["OrderItem"][];
             source: components["schemas"]["OrderSource"];
             status: components["schemas"]["OrderStatus"];
@@ -95,6 +84,23 @@ export interface components {
              */
             createdAt: string;
         };
+        /** @description Позиция заказа. */
+        OrderItem: {
+            /** @description Название напитка. */
+            name: string;
+            /** @description Количество порций. */
+            quantity: number;
+        };
+        /**
+         * @description Источник заказа.
+         * @enum {string}
+         */
+        OrderSource: "cashier" | "web";
+        /**
+         * @description Статус заказа. Меняется только вперёд (new → preparing → ready).
+         * @enum {string}
+         */
+        OrderStatus: "new" | "preparing" | "ready";
         UpdateOrderStatusRequest: {
             status: components["schemas"]["OrderStatus"];
         };
@@ -132,6 +138,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Идентификатор заказа. */
                 orderId: string;
             };
             cookie?: never;
@@ -150,6 +157,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Order"];
                 };
+            };
+            /** @description Тело запроса не соответствует контракту */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Заказ не найден */
             404: {

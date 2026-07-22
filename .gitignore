@@ -5,6 +5,12 @@ node_modules/
 dist/
 build/
 
+# копия спеки внутрь пакета — артефакт сборки, оригинал в openapi/openapi.yaml
+packages/api-types/openapi.yaml
+
+# тарболы npm pack (локальная проверка перед публикацией)
+*.tgz
+
 # секреты и локальный конфиг — НИКОГДА в публичный репо
 .env
 .env.local
