@@ -18,7 +18,7 @@ const notifier = createQueueNotifier();
 const repository = createOrderRepository(db, config.readyTtlMs);
 const service = createOrderService(repository, notifier, config.readyTtlMs);
 
-const app = createApp(service, notifier);
+const app = createApp(service, notifier, config.corsOrigins);
 
 const server = app.listen(config.port, () => {
   console.log(`Brewline backend listening on http://localhost:${config.port}`);
