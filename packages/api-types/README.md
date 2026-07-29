@@ -31,8 +31,7 @@ const next: OrderStatus = 'preparing';
 ```ts
 import type { paths, operations, components } from '@brewline/api-types';
 
-type OrdersResponse =
-  paths['/orders']['get']['responses']['200']['content']['application/json'];
+type OrdersResponse = paths['/orders']['get']['responses']['200']['content']['application/json'];
 ```
 
 Сама спека тоже входит в пакет — на случай, если потребителю нужно сгенерировать себе клиент:

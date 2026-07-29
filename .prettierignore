@@ -2,3 +2,9 @@ dist/
 src/generated/
 packages/api-types/dist/
 packages/api-types/src/generated/
+
+# Генерируется из zod-схем (npm run gen:spec) и копируется в пакет типов.
+# Формат задаёт генератор: если Prettier перепишет файл по-своему, шаг check:spec
+# начнёт падать — он сравнивает закоммиченную спеку с заново сгенерированной.
+openapi/openapi.yaml
+packages/api-types/openapi.yaml

@@ -9,8 +9,7 @@ import type { QueueNotifier } from '../events/queueNotifier.js';
 
 /** Результат смены статуса — размеченное объединение вместо исключений. */
 export type ChangeStatusResult =
-  | { ok: true; order: Order }
-  | { ok: false; reason: 'not_found' | 'invalid_transition' };
+  { ok: true; order: Order } | { ok: false; reason: 'not_found' | 'invalid_transition' };
 
 export interface OrderService {
   getQueue(): Promise<Order[]>;

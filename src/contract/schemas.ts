@@ -24,8 +24,7 @@ import { z } from 'zod';
 
 export const OrderStatusSchema = z.enum(['new', 'preparing', 'ready']).meta({
   id: 'OrderStatus',
-  description:
-    'Статус заказа. Меняется только вперёд (new → preparing → ready).',
+  description: 'Статус заказа. Меняется только вперёд (new → preparing → ready).',
 });
 
 export const OrderSourceSchema = z.enum(['cashier', 'web']).meta({
@@ -69,9 +68,7 @@ export type Order = z.infer<typeof OrderSchema>;
 export type OrderStatus = z.infer<typeof OrderStatusSchema>;
 export type OrderSource = z.infer<typeof OrderSourceSchema>;
 export type OrderItem = z.infer<typeof OrderItemSchema>;
-export type UpdateOrderStatusRequest = z.infer<
-  typeof UpdateOrderStatusRequestSchema
->;
+export type UpdateOrderStatusRequest = z.infer<typeof UpdateOrderStatusRequestSchema>;
 
 // --- Рантайм-значения ----------------------------------------------------
 

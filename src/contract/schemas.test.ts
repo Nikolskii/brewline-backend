@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  ORDER_STATUSES,
-  OrderSchema,
-  UpdateOrderStatusRequestSchema,
-} from './schemas.js';
+import { ORDER_STATUSES, OrderSchema, UpdateOrderStatusRequestSchema } from './schemas.js';
 
 /**
  * Это тесты КОНТРАКТА, а не бизнес-логики: они фиксируют, что схемы реально
@@ -21,19 +17,13 @@ describe('UpdateOrderStatusRequestSchema — валидация тела зап�
   });
 
   it('отвергает неизвестный статус', () => {
-    expect(
-      UpdateOrderStatusRequestSchema.safeParse({ status: 'чепуха' }).success,
-    ).toBe(false);
+    expect(UpdateOrderStatusRequestSchema.safeParse({ status: 'чепуха' }).success).toBe(false);
   });
 
   it('отвергает тело без status и не-объект', () => {
     expect(UpdateOrderStatusRequestSchema.safeParse({}).success).toBe(false);
-    expect(UpdateOrderStatusRequestSchema.safeParse(undefined).success).toBe(
-      false,
-    );
-    expect(UpdateOrderStatusRequestSchema.safeParse('preparing').success).toBe(
-      false,
-    );
+    expect(UpdateOrderStatusRequestSchema.safeParse(undefined).success).toBe(false);
+    expect(UpdateOrderStatusRequestSchema.safeParse('preparing').success).toBe(false);
   });
 });
 
@@ -53,8 +43,7 @@ describe('OrderSchema — форма заказа', () => {
 
   it('отвергает нулевое и дробное количество', () => {
     expect(
-      OrderSchema.safeParse({ ...valid, items: [{ name: 'Латте', quantity: 0 }] })
-        .success,
+      OrderSchema.safeParse({ ...valid, items: [{ name: 'Латте', quantity: 0 }] }).success,
     ).toBe(false);
     expect(
       OrderSchema.safeParse({
@@ -65,15 +54,11 @@ describe('OrderSchema — форма заказа', () => {
   });
 
   it('отвергает createdAt не в формате ISO 8601', () => {
-    expect(OrderSchema.safeParse({ ...valid, createdAt: '19.07.2026' }).success).toBe(
-      false,
-    );
+    expect(OrderSchema.safeParse({ ...valid, createdAt: '19.07.2026' }).success).toBe(false);
   });
 
   it('отвергает неизвестный источник заказа', () => {
-    expect(OrderSchema.safeParse({ ...valid, source: 'telepathy' }).success).toBe(
-      false,
-    );
+    expect(OrderSchema.safeParse({ ...valid, source: 'telepathy' }).success).toBe(false);
   });
 });
 

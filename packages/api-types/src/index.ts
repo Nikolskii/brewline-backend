@@ -11,5 +11,4 @@ export type Order = components['schemas']['Order'];
 export type OrderStatus = components['schemas']['OrderStatus'];
 export type OrderItem = components['schemas']['OrderItem'];
 export type OrderSource = components['schemas']['OrderSource'];
-export type UpdateOrderStatusRequest =
-  components['schemas']['UpdateOrderStatusRequest'];
+export type UpdateOrderStatusRequest = components['schemas']['UpdateOrderStatusRequest'];
