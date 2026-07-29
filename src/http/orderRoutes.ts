@@ -30,10 +30,7 @@ export function createOrderRoutes(service: OrderService): Router {
       return;
     }
 
-    const result = await service.changeStatus(
-      req.params.orderId,
-      parsed.data.status,
-    );
+    const result = await service.changeStatus(req.params.orderId, parsed.data.status);
 
     if (result.ok) {
       res.json(result.order);

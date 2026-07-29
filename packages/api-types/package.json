@@ -12,7 +12,11 @@
     },
     "./openapi.yaml": "./openapi.yaml"
   },
-  "files": ["dist", "openapi.yaml", "README.md"],
+  "files": [
+    "dist",
+    "openapi.yaml",
+    "README.md"
+  ],
   "publishConfig": {
     "access": "public"
   },
@@ -22,6 +26,11 @@
     "directory": "packages/api-types"
   },
   "homepage": "https://github.com/Nikolskii/brewline-backend/tree/main/packages/api-types#readme",
-  "keywords": ["brewline", "openapi", "types", "contract"],
+  "keywords": [
+    "brewline",
+    "openapi",
+    "types",
+    "contract"
+  ],
   "sideEffects": false
 }

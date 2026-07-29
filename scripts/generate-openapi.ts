@@ -15,18 +15,12 @@ import { writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import {
-  OpenApiGeneratorV31,
-  OpenAPIRegistry,
-} from '@asteasolutions/zod-to-openapi';
+import { OpenApiGeneratorV31, OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
 import { stringify } from 'yaml';
 
 import { z } from 'zod';
 
-import {
-  OrderSchema,
-  UpdateOrderStatusRequestSchema,
-} from '../src/contract/schemas.js';
+import { OrderSchema, UpdateOrderStatusRequestSchema } from '../src/contract/schemas.js';
 
 // Явно регистрировать схемы не нужно: генератор сам выносит в components/schemas
 // всё, у чего есть .meta({ id }), включая вложенные (OrderItem, OrderStatus).
@@ -57,8 +51,7 @@ registry.registerPath({
   path: '/orders/{orderId}/status',
   operationId: 'updateOrderStatus',
   summary: 'Сменить статус заказа',
-  description:
-    'Перевод статуса вперёд по автомату. Недопустимый переход отклоняется (409).',
+  description: 'Перевод статуса вперёд по автомату. Недопустимый переход отклоняется (409).',
   request: {
     params: z.object({
       orderId: z.string().describe('Идентификатор заказа.'),
@@ -100,21 +93,19 @@ registry.registerPath({
   },
 });
 
-const document = new OpenApiGeneratorV31(registry.definitions).generateDocument(
-  {
-    openapi: '3.1.0',
-    info: {
-      title: 'Brewline API',
-      version: '0.1.0',
-      description:
-        'REST + real-time контракт Brewline.\n' +
-        'ФАЙЛ СГЕНЕРИРОВАН из zod-схем (src/contract/schemas.ts, ADR 0010) — ' +
-        'править руками бессмысленно, правки затрёт `npm run gen:spec`.\n' +
-        'Типы для фронтов собираются отсюда в пакет @brewline/api-types (ADR 0009).',
-    },
-    servers: [{ url: 'http://localhost:3000', description: 'Локальная разработка' }],
+const document = new OpenApiGeneratorV31(registry.definitions).generateDocument({
+  openapi: '3.1.0',
+  info: {
+    title: 'Brewline API',
+    version: '0.1.0',
+    description:
+      'REST + real-time контракт Brewline.\n' +
+      'ФАЙЛ СГЕНЕРИРОВАН из zod-схем (src/contract/schemas.ts, ADR 0010) — ' +
+      'править руками бессмысленно, правки затрёт `npm run gen:spec`.\n' +
+      'Типы для фронтов собираются отсюда в пакет @brewline/api-types (ADR 0009).',
   },
-);
+  servers: [{ url: 'http://localhost:3000', description: 'Локальная разработка' }],
+});
 
 // Генератор всегда добавляет эти секции, даже пустыми — в спеке они лишний шум.
 if (Object.keys(document.components?.parameters ?? {}).length === 0) {
@@ -124,12 +115,7 @@ if (Object.keys(document.webhooks ?? {}).length === 0) {
   delete document.webhooks;
 }
 
-const outPath = join(
-  dirname(fileURLToPath(import.meta.url)),
-  '..',
-  'openapi',
-  'openapi.yaml',
-);
+const outPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'openapi', 'openapi.yaml');
 
 writeFileSync(outPath, stringify(document, { lineWidth: 100 }), 'utf8');
 console.log(`✨ openapi.yaml сгенерирован из zod-схем → ${outPath}`);

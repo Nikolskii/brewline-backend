@@ -9,12 +9,7 @@ import type { OrderStatus } from '../contract/schemas.js';
 
 // Реэкспорт типов контракта: остальной код (сервис, репозиторий, роуты) работает
 // с доменом и не обязан знать, что типы физически заданы схемами в contract/.
-export type {
-  Order,
-  OrderItem,
-  OrderSource,
-  OrderStatus,
-} from '../contract/schemas.js';
+export type { Order, OrderItem, OrderSource, OrderStatus } from '../contract/schemas.js';
 
 // --- Автомат переходов ---------------------------------------------------
 
@@ -33,7 +28,6 @@ const TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
 export function canTransition(from: OrderStatus, to: OrderStatus): boolean {
   return TRANSITIONS[from].includes(to);
 }
-
 
 // --- Очередь -------------------------------------------------------------
 
