@@ -31,6 +31,9 @@ services:
       PORT: 3000
       # Хост базы = имя сервиса 'mongo' (compose-сеть), а не localhost.
       MONGO_URL: mongodb://mongo:27017/brewline
+      # Фронты запускаются на хосте, а не в compose: табло 5173, бариста 5174.
+      # Origin'ы задаются явно — '*' несовместим с credentials (ADR 0004).
+      CORS_ORIGINS: http://localhost:5173,http://localhost:5174
     volumes:
       - .:/app # код с хоста → hot-reload
       - /app/node_modules # node_modules из образа (linux), НЕ с хоста (darwin)

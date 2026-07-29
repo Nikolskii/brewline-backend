@@ -1,3 +1,4 @@
+import cors from 'cors';
 import express, { type Express } from 'express';
 import { createOrderRoutes } from './http/orderRoutes.js';
 import { createOrderStream } from './http/orderStream.js';
@@ -9,8 +10,20 @@ import type { QueueNotifier } from './events/queueNotifier.js';
  * Зависимости (сервис, notifier) передаются снаружи — приложение не создаёт их само.
  * Благодаря этому в тестах можно поднять app с фейковыми зависимостями, без Mongo.
  */
-export function createApp(service: OrderService, notifier: QueueNotifier): Express {
+export function createApp(
+  service: OrderService,
+  notifier: QueueNotifier,
+  corsOrigins: string[],
+): Express {
   const app = express();
+
+  // Фронты живут на других origin, чем API (ADR 0004), поэтому ответы читаются
+  // браузером только с разрешающими заголовками. Мидлварь идёт первой: preflight
+  // OPTIONS должен получить ответ раньше, чем дойдёт до маршрутов.
+  //
+  // credentials включён на вырост — куки сессии бариста появятся вместе с
+  // аутентификацией (ADR 0011), а конфигурация мидлвари от этого не меняется.
+  app.use(cors({ origin: corsOrigins, credentials: true }));
 
   app.use(express.json());
 
