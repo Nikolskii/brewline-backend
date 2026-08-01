@@ -7,6 +7,7 @@ import type { QueueNotifier } from './events/queueNotifier.js';
 import type { OrderService } from './service/orderService.js';
 
 const ALLOWED = 'http://localhost:5174';
+const LOOPBACK_ALLOWED = 'http://127.0.0.1:5174';
 const FOREIGN = 'http://evil.example';
 
 const service: OrderService = {
@@ -23,7 +24,7 @@ let baseUrl: string;
 let server: ReturnType<ReturnType<typeof createApp>['listen']>;
 
 beforeAll(async () => {
-  const app = createApp(service, notifier, [ALLOWED]);
+  const app = createApp(service, notifier, [ALLOWED, LOOPBACK_ALLOWED]);
   await new Promise<void>((resolve) => {
     server = app.listen(0, resolve);
   });
@@ -35,13 +36,16 @@ afterAll(async () => {
 });
 
 describe('CORS', () => {
-  it('разрешает читать ответ фронту из списка (ADR 0004)', async () => {
-    const res = await fetch(`${baseUrl}/orders`, { headers: { Origin: ALLOWED } });
+  it.each([ALLOWED, LOOPBACK_ALLOWED])(
+    'разрешает читать ответ фронту %s из списка (ADR 0004)',
+    async (origin) => {
+      const res = await fetch(`${baseUrl}/orders`, { headers: { Origin: origin } });
 
-    expect(res.headers.get('access-control-allow-origin')).toBe(ALLOWED);
-    // Понадобится куке сессии бариста (ADR 0011).
-    expect(res.headers.get('access-control-allow-credentials')).toBe('true');
-  });
+      expect(res.headers.get('access-control-allow-origin')).toBe(origin);
+      // Понадобится куке сессии бариста (ADR 0011).
+      expect(res.headers.get('access-control-allow-credentials')).toBe('true');
+    },
+  );
 
   it('не разрешает читать ответ постороннему origin', async () => {
     const res = await fetch(`${baseUrl}/orders`, { headers: { Origin: FOREIGN } });

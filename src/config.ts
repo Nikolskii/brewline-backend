@@ -16,8 +16,13 @@ export interface Config {
   corsOrigins: string[];
 }
 
-/** Дев по умолчанию: табло и бариста, каждый на своём порту. */
-const DEFAULT_CORS_ORIGINS = ['http://localhost:5173', 'http://localhost:5174'];
+/** Дев по умолчанию: табло и бариста, каждый на своём порту и с обоими loopback-именами. */
+const DEFAULT_CORS_ORIGINS = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5174',
+];
 
 export function loadConfig(): Config {
   const readyTtlMinutes = Number(process.env.READY_TTL_MINUTES ?? 5);
