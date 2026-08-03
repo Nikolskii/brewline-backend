@@ -64,6 +64,45 @@ zod-схемы  →  openapi.yaml  →  @brewline/api-types  →  фронты
 | `npm run build:types`       | Собрать пакет `@brewline/api-types`                              |
 | `npm run typecheck:scripts` | Проверить типы в `scripts/` (в сборку приложения они не входят)  |
 
+## Релиз `@brewline/api-types`
+
+Этот раздел нужен разработчику после merge PR, который меняет OpenAPI-контракт. Фронты получают
+новые типы только из npm, поэтому одной правки `openapi.yaml` недостаточно.
+
+**Предусловия:** PR уже влит в `main`, CI зелёный, а версия в
+[`packages/api-types/package.json`](packages/api-types/package.json) поднята по SemVer.
+
+1. Перейдите на актуальный `main` и посмотрите версию пакета:
+
+   ```bash
+   git switch main
+   git pull --ff-only origin main
+   node -p "require('./packages/api-types/package.json').version"
+   ```
+
+2. Создайте аннотированный тег, **точно совпадающий** с этой версией, и отправьте его:
+
+   ```bash
+   git tag -a api-types-v0.2.0 -m "release: api-types 0.2.0"
+   git push origin api-types-v0.2.0
+   ```
+
+   Для другой версии замените оба `0.2.0` на значение из первого шага. Push тега запускает
+   GitHub Actions [`publish-api-types`](.github/workflows/publish-api-types.yml): он повторно
+   собирает типы, сверяет имя тега с `package.json` и публикует пакет в npm с provenance.
+
+3. Дождитесь зелёного workflow и проверьте опубликованную версию:
+
+   ```bash
+   npm view @brewline/api-types version
+   ```
+
+   Ответ должен совпасть с версией тега, например `0.2.0`.
+
+Теги релизов не переписываем. Если публикация не состоялась или версия уже есть в npm, не удаляйте
+и не создавайте тег заново: исправьте проблему отдельным коммитом, поднимите версию пакета и
+выпустите новый тег.
+
 ## Запуск
 
 **Вариант A — через docker-compose (рекомендуется).** Backend + MongoDB одной командой,
