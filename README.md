@@ -30,7 +30,7 @@
 
 `Node.js` · `Express` · `TypeScript (strict)` · `MongoDB`
 
-## API (инкремент 1 — walking skeleton)
+## API (инкремент 2 — аутентификация бариста)
 
 | Метод | Путь                  | Назначение                                                            |
 | ----- | --------------------- | --------------------------------------------------------------------- |
@@ -38,6 +38,14 @@
 | GET   | `/orders`             | Снапшот активной очереди (`new` + `preparing`, по `createdAt`) ✅     |
 | PATCH | `/orders/{id}/status` | Перевод заказа по автомату статусов (`409` — недопустимый переход) ✅ |
 | GET   | `/orders/stream`      | SSE-поток снапшотов (real-time, событие `snapshot`) ✅                |
+| POST  | `/auth/login`         | Открыть сессию по общему паролю смены                                 |
+| POST  | `/auth/logout`        | Закрыть текущую сессию                                                |
+| GET   | `/auth/session`       | Узнать, есть ли действующая сессия                                    |
+
+`GET /orders` и `GET /orders/stream` публичны: табло в зале не умеет входить в систему.
+`PATCH /orders/{id}/status` требует действующую сессию бариста и без неё отвечает `401`.
+Сессия хранится на сервере, а браузер получает только подписанную `httpOnly` cookie
+с `SameSite=Lax`; JavaScript фронта не может прочитать её (ADR 0011).
 
 Контракт описан zod-схемами в [`src/contract/schemas.ts`](src/contract/schemas.ts) (ADR 0010).
 Из них генерируется [`openapi/openapi.yaml`](openapi/openapi.yaml) — публикуемый артефакт и вход
@@ -59,7 +67,9 @@ zod-схемы  →  openapi.yaml  →  @brewline/api-types  →  фронты
 ## Запуск
 
 **Вариант A — через docker-compose (рекомендуется).** Backend + MongoDB одной командой,
-с hot-reload. `docker-compose.yml` живёт в этом же репо:
+с hot-reload. До первого запуска нужно заполнить локальный `.env`: `docker compose` подставит
+из него хеш пароля и секрет сессии. Ни `.env`, ни значения секретов в репозиторий не коммитятся.
+`docker-compose.yml` живёт в этом же репо:
 
 ```bash
 docker compose up --build     # первый раз — со сборкой; далее просто docker compose up
@@ -96,12 +106,15 @@ npm start        # node dist/index.js
 
 **Конфигурация** (переменные окружения):
 
-| Переменная          | По умолчанию                                       | Назначение                                                    |
-| ------------------- | -------------------------------------------------- | ------------------------------------------------------------- |
-| `PORT`              | `3000`                                             | Порт HTTP-сервера                                             |
-| `MONGO_URL`         | —                                                  | Строка подключения к MongoDB                                  |
-| `READY_TTL_MINUTES` | `5`                                                | Сколько минут `ready` держится на табло, потом авто-снимается |
-| `CORS_ORIGINS`      | `localhost` и `127.0.0.1` на портах `5173`, `5174` | Origin'ы фронтов, которым браузер разрешит читать ответы      |
+| Переменная              | По умолчанию                                       | Назначение                                                               |
+| ----------------------- | -------------------------------------------------- | ------------------------------------------------------------------------ |
+| `PORT`                  | `3000`                                             | Порт HTTP-сервера                                                        |
+| `MONGO_URL`             | —                                                  | Строка подключения к MongoDB                                             |
+| `READY_TTL_MINUTES`     | `5`                                                | Сколько минут `ready` держится на табло, потом авто-снимается            |
+| `CORS_ORIGINS`          | `localhost` и `127.0.0.1` на портах `5173`, `5174` | Origin'ы фронтов, которым браузер разрешит читать ответы                 |
+| `BARISTA_PASSWORD_HASH` | —                                                  | bcrypt-хеш общего пароля смены; обязательная переменная                  |
+| `SESSION_SECRET`        | —                                                  | Случайный секрет HMAC для подписи cookie-сессии; обязательная переменная |
+| `SESSION_TTL_HOURS`     | `12`                                               | Время жизни сессии бариста в часах                                       |
 
 Образец — [`.env.example`](.env.example).
 
@@ -113,6 +126,33 @@ npm start        # node dist/index.js
 браузер запрещает `*` вместе с `credentials`, а кука сессии бариста (ADR 0011) без credentials
 не поедет. Новый фронт нужно добавлять в список — иначе он получит «загадочно не работает
 в браузере» при живом и корректном ответе в `curl`.
+
+**Про loopback-адрес.** `localhost` и `127.0.0.1` — не только разные origin, но и разные
+**site** для `SameSite=Lax`. Поэтому авторизованный интерфейс бариста в dev запускайте как
+`http://localhost:5174` и обращайтесь к `http://localhost:3000`. Адреса `127.0.0.1` остаются
+разрешёнными для публичного чтения и удобной диагностики, но не подходят для cookie-сессии API
+на `localhost`.
+
+**Подготовка секретов для docker-compose.** Скопируйте `.env.example` в `.env`, затем локально
+сгенерируйте значения. Команда ниже спрашивает пароль без эха, поэтому он не попадёт в историю
+shell, и выводит bcrypt-хеш:
+
+```bash
+read -r -s 'BARISTA_PASSWORD?Пароль смены: '
+echo
+export BARISTA_PASSWORD
+node --input-type=module -e "import { hash } from 'bcryptjs'; console.log(await hash(process.env.BARISTA_PASSWORD, 12));"
+unset BARISTA_PASSWORD
+openssl rand -hex 32
+```
+
+Скопируйте первый вывод в уже существующую строку `.env` как
+`BARISTA_PASSWORD_HASH='<bcrypt-хеш>'`, второй — как `SESSION_SECRET=<случайная-строка>`.
+Одинарные кавычки вокруг bcrypt-хеша важны: Docker Compose иначе может интерпретировать символы
+`$`. Не дописывайте переменные в конец файла: иначе там останутся дубли пустых значений.
+
+Для автономного `npm run dev` передайте эти переменные окружения процессу Node: `.env`
+сам по себе Node не читает.
 
 ## Ручная проверка
 
@@ -132,7 +172,18 @@ curl http://localhost:3000/health     # {"status":"ok"}
 docker compose exec backend npm run seed
 ```
 
-**3. Live-обновление через SSE — нужны два терминала.**
+**3. Вход бариста и защита PATCH.** Сохраните cookie в файл, затем с ней смените статус:
+
+```bash
+curl -i -c /tmp/brewline-cookies.txt -X POST http://localhost:3000/auth/login \
+  -H 'Content-Type: application/json' -d '{"password":"<пароль смены>"}'
+curl -b /tmp/brewline-cookies.txt http://localhost:3000/auth/session
+```
+
+Ответ второго запроса: `{"authenticated":true}`. Без `-b cookies.txt` защищённый PATCH вернёт
+`401`; `GET /orders` по-прежнему доступен без cookie.
+
+**4. Live-обновление через SSE — нужны два терминала.**
 
 Терминал A — подписка на поток (висит и печатает события):
 
@@ -146,16 +197,18 @@ curl -N http://localhost:3000/orders/stream
 
 ```bash
 curl -X PATCH http://localhost:3000/orders/<orderId>/status \
+  -b /tmp/brewline-cookies.txt \
   -H 'Content-Type: application/json' -d '{"status":"preparing"}'
 ```
 
 → В терминале A **тут же появится новый `snapshot`** с обновлённым статусом. Это и есть live-очередь.
 
-**4. Проверка отказов:**
+**5. Проверка отказов:**
 
 ```bash
 # назад нельзя → 409
 curl -i -X PATCH http://localhost:3000/orders/<orderId>/status \
+  -b /tmp/brewline-cookies.txt \
   -H 'Content-Type: application/json' -d '{"status":"new"}'
 # кривой статус → 400 ; несуществующий id → 404
 ```

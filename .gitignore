@@ -16,6 +16,9 @@ packages/api-types/openapi.yaml
 .env.local
 *.env
 
+# Сохранённые curl-сессии: содержат действующую httpOnly-cookie бариста.
+cookies.txt
+
 # логи, мусор ОС
 *.log
 .DS_Store
