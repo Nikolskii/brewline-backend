@@ -1,5 +1,6 @@
 import { MongoClient } from 'mongodb';
 import { createApp } from './app.js';
+import { createAuthService } from './auth/authService.js';
 import { loadConfig } from './config.js';
 import { createOrderRepository } from './repository/orderRepository.js';
 import { createOrderService } from './service/orderService.js';
@@ -17,8 +18,16 @@ const db = client.db();
 const notifier = createQueueNotifier();
 const repository = createOrderRepository(db, config.readyTtlMs);
 const service = createOrderService(repository, notifier, config.readyTtlMs);
+const auth = createAuthService({
+  passwordHash: config.baristaPasswordHash,
+  sessionSecret: config.sessionSecret,
+  sessionTtlMs: config.sessionTtlMs,
+});
 
-const app = createApp(service, notifier, config.corsOrigins);
+const app = createApp(service, notifier, config.corsOrigins, auth, {
+  sessionTtlMs: config.sessionTtlMs,
+  secureCookies: config.secureCookies,
+});
 
 const server = app.listen(config.port, () => {
   console.log(`Brewline backend listening on http://localhost:${config.port}`);

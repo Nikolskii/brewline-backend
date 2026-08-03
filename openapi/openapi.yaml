@@ -79,6 +79,23 @@ components:
           $ref: "#/components/schemas/OrderStatus"
       required:
         - status
+    Session:
+      type: object
+      properties:
+        authenticated:
+          type: boolean
+          description: Есть ли действующая сессия бариста.
+      required:
+        - authenticated
+    LoginRequest:
+      type: object
+      properties:
+        password:
+          type: string
+          minLength: 1
+          description: Общий пароль смены.
+      required:
+        - password
 paths:
   /orders:
     get:
@@ -123,10 +140,52 @@ paths:
                 $ref: "#/components/schemas/Order"
         "400":
           description: Тело запроса не соответствует контракту
+        "401":
+          description: Требуется действующая сессия бариста
         "404":
           description: Заказ не найден
         "409":
           description: Недопустимый переход статуса
+  /auth/login:
+    post:
+      operationId: loginBarista
+      summary: Открыть сессию бариста
+      description: Проверяет общий пароль смены и при успехе ставит подписанную httpOnly cookie-сессию.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Сессия открыта
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
+        "400":
+          description: Тело запроса не соответствует контракту
+        "401":
+          description: Неверный пароль смены
+  /auth/logout:
+    post:
+      operationId: logoutBarista
+      summary: Закрыть сессию бариста
+      responses:
+        "204":
+          description: Сессия закрыта
+  /auth/session:
+    get:
+      operationId: getBaristaSession
+      summary: Проверить сессию бариста
+      responses:
+        "200":
+          description: Состояние сессии
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Session"
   /orders/stream:
     get:
       operationId: streamOrders

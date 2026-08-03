@@ -44,6 +44,60 @@ export interface paths {
         patch: operations["updateOrderStatus"];
         trace?: never;
     };
+    "/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Открыть сессию бариста
+         * @description Проверяет общий пароль смены и при успехе ставит подписанную httpOnly cookie-сессию.
+         */
+        post: operations["loginBarista"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Закрыть сессию бариста */
+        post: operations["logoutBarista"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Проверить сессию бариста */
+        get: operations["getBaristaSession"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/orders/stream": {
         parameters: {
             query?: never;
@@ -103,6 +157,14 @@ export interface components {
         OrderStatus: "new" | "preparing" | "ready";
         UpdateOrderStatusRequest: {
             status: components["schemas"]["OrderStatus"];
+        };
+        Session: {
+            /** @description Есть ли действующая сессия бариста. */
+            authenticated: boolean;
+        };
+        LoginRequest: {
+            /** @description Общий пароль смены. */
+            password: string;
         };
     };
     responses: never;
@@ -165,6 +227,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Требуется действующая сессия бариста */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Заказ не найден */
             404: {
                 headers: {
@@ -178,6 +247,82 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    loginBarista: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Сессия открыта */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Session"];
+                };
+            };
+            /** @description Тело запроса не соответствует контракту */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Неверный пароль смены */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    logoutBarista: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Сессия закрыта */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getBaristaSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Состояние сессии */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Session"];
+                };
             };
         };
     };

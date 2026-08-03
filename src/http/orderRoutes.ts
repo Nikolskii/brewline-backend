@@ -1,12 +1,14 @@
 import { Router } from 'express';
 import { UpdateOrderStatusRequestSchema } from '../contract/schemas.js';
+import type { AuthService } from '../auth/authService.js';
+import { readSessionToken } from './authRoutes.js';
 import type { OrderService } from '../service/orderService.js';
 
 /**
  * HTTP-слой: парсинг запроса, вызов сервиса, выбор кода ответа.
  * Про Mongo и бизнес-правила не знает — работает через OrderService.
  */
-export function createOrderRoutes(service: OrderService): Router {
+export function createOrderRoutes(service: OrderService, auth: AuthService): Router {
   const router = Router();
 
   // GET /orders — снапшот активной очереди (openapi: getOrders)
@@ -17,6 +19,11 @@ export function createOrderRoutes(service: OrderService): Router {
 
   // PATCH /orders/:orderId/status — смена статуса (openapi: updateOrderStatus)
   router.patch('/orders/:orderId/status', async (req, res) => {
+    if (!auth.hasSession(readSessionToken(req.headers.cookie))) {
+      res.status(401).json({ error: 'Требуется вход бариста' });
+      return;
+    }
+
     // Валидация тела схемой контракта (ADR 0010): та же схема, из которой
     // сгенерирована спека, — расходиться с контрактом ей физически негде.
     // safeParse не бросает исключение, а возвращает результат-объединение.

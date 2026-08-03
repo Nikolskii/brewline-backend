@@ -34,6 +34,10 @@ services:
       # Фронты запускаются на хосте, а не в compose: табло 5173, бариста 5174.
       # Origin'ы задаются явно — '*' несовместим с credentials (ADR 0004).
       CORS_ORIGINS: http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174
+      # Секреты берутся из локального .env, а не из репозитория.
+      BARISTA_PASSWORD_HASH: ${BARISTA_PASSWORD_HASH:?Set BARISTA_PASSWORD_HASH in .env}
+      SESSION_SECRET: ${SESSION_SECRET:?Set SESSION_SECRET in .env}
+      SESSION_TTL_HOURS: ${SESSION_TTL_HOURS:-12}
     volumes:
       - .:/app # код с хоста → hot-reload
       - /app/node_modules # node_modules из образа (linux), НЕ с хоста (darwin)
