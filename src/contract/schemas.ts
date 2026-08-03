@@ -62,6 +62,18 @@ export const UpdateOrderStatusRequestSchema = z
   })
   .meta({ id: 'UpdateOrderStatusRequest' });
 
+export const LoginRequestSchema = z
+  .object({
+    password: z.string().min(1).describe('Общий пароль смены.'),
+  })
+  .meta({ id: 'LoginRequest' });
+
+export const SessionSchema = z
+  .object({
+    authenticated: z.boolean().describe('Есть ли действующая сессия бариста.'),
+  })
+  .meta({ id: 'Session' });
+
 // --- Типы (выводятся из схем, руками не пишутся) -------------------------
 
 export type Order = z.infer<typeof OrderSchema>;
@@ -69,6 +81,8 @@ export type OrderStatus = z.infer<typeof OrderStatusSchema>;
 export type OrderSource = z.infer<typeof OrderSourceSchema>;
 export type OrderItem = z.infer<typeof OrderItemSchema>;
 export type UpdateOrderStatusRequest = z.infer<typeof UpdateOrderStatusRequestSchema>;
+export type LoginRequest = z.infer<typeof LoginRequestSchema>;
+export type Session = z.infer<typeof SessionSchema>;
 
 // --- Рантайм-значения ----------------------------------------------------
 

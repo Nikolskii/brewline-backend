@@ -20,7 +20,12 @@ import { stringify } from 'yaml';
 
 import { z } from 'zod';
 
-import { OrderSchema, UpdateOrderStatusRequestSchema } from '../src/contract/schemas.js';
+import {
+  LoginRequestSchema,
+  OrderSchema,
+  SessionSchema,
+  UpdateOrderStatusRequestSchema,
+} from '../src/contract/schemas.js';
 
 // Явно регистрировать схемы не нужно: генератор сам выносит в components/schemas
 // всё, у чего есть .meta({ id }), включая вложенные (OrderItem, OrderStatus).
@@ -69,8 +74,55 @@ registry.registerPath({
       content: { 'application/json': { schema: OrderSchema } },
     },
     400: { description: 'Тело запроса не соответствует контракту' },
+    401: { description: 'Требуется действующая сессия бариста' },
     404: { description: 'Заказ не найден' },
     409: { description: 'Недопустимый переход статуса' },
+  },
+});
+
+registry.registerPath({
+  method: 'post',
+  path: '/auth/login',
+  operationId: 'loginBarista',
+  summary: 'Открыть сессию бариста',
+  description:
+    'Проверяет общий пароль смены и при успехе ставит подписанную httpOnly cookie-сессию.',
+  request: {
+    body: {
+      required: true,
+      content: { 'application/json': { schema: LoginRequestSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description: 'Сессия открыта',
+      content: { 'application/json': { schema: SessionSchema } },
+    },
+    400: { description: 'Тело запроса не соответствует контракту' },
+    401: { description: 'Неверный пароль смены' },
+  },
+});
+
+registry.registerPath({
+  method: 'post',
+  path: '/auth/logout',
+  operationId: 'logoutBarista',
+  summary: 'Закрыть сессию бариста',
+  responses: {
+    204: { description: 'Сессия закрыта' },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/auth/session',
+  operationId: 'getBaristaSession',
+  summary: 'Проверить сессию бариста',
+  responses: {
+    200: {
+      description: 'Состояние сессии',
+      content: { 'application/json': { schema: SessionSchema } },
+    },
   },
 });
 
