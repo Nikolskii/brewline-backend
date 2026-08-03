@@ -1,5 +1,7 @@
 import cors from 'cors';
 import express, { type Express } from 'express';
+import type { AuthService } from './auth/authService.js';
+import { createAuthRoutes, type AuthRouteOptions } from './http/authRoutes.js';
 import { createOrderRoutes } from './http/orderRoutes.js';
 import { createOrderStream } from './http/orderStream.js';
 import type { OrderService } from './service/orderService.js';
@@ -14,6 +16,8 @@ export function createApp(
   service: OrderService,
   notifier: QueueNotifier,
   corsOrigins: string[],
+  auth: AuthService,
+  authRouteOptions: AuthRouteOptions,
 ): Express {
   const app = express();
 
@@ -21,8 +25,8 @@ export function createApp(
   // браузером только с разрешающими заголовками. Мидлварь идёт первой: preflight
   // OPTIONS должен получить ответ раньше, чем дойдёт до маршрутов.
   //
-  // credentials включён на вырост — куки сессии бариста появятся вместе с
-  // аутентификацией (ADR 0011), а конфигурация мидлвари от этого не меняется.
+  // credentials нужен сессии бариста: браузер не сохранит и не приложит cookie
+  // к cross-origin fetch без него (ADR 0011).
   app.use(cors({ origin: corsOrigins, credentials: true }));
 
   app.use(express.json());
@@ -32,7 +36,8 @@ export function createApp(
     res.json({ status: 'ok' });
   });
 
-  app.use(createOrderRoutes(service));
+  app.use(createAuthRoutes(auth, authRouteOptions));
+  app.use(createOrderRoutes(service, auth));
   app.use(createOrderStream(service, notifier));
 
   return app;
